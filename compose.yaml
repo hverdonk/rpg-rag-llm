@@ -1,0 +1,38 @@
+services:
+  weaviate:
+    image: semitechnologies/weaviate:latest
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    environment:
+      QUERY_DEFAULTS_LIMIT: "30"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      WEAVIATE_URL: http://weaviate:8080
+      NOTES_SESSIONS_DIR: /notes/sessions
+      NOTES_CHARACTERS_DIR: /notes/characters
+      EMBED_MODEL_NAME: BAAI/bge-small-en-v1.5
+      RERANKER_MODEL_NAME: BAAI/bge-reranker-base
+      ENABLE_RERANKER: "false"
+      MAX_CONTEXT_CHUNKS: "8"
+    volumes:
+      - ./data/notes/sessions:/notes/sessions:ro
+      - ./data/notes/characters:/notes/characters:ro
+      - api_cache:/root/.cache # speeds up model loads
+    depends_on:
+      - weaviate
+    ports: ["8000:8000"]
+
+
+volumes:
+  weaviate_data:
+  api_cache:
