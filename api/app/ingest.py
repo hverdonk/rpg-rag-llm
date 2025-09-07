@@ -148,6 +148,16 @@ def scan_once() -> dict:
         indexed_docs += 1
         indexed_chunks += process_document_chunks(path, doc_uuid, session_no, session_date)
 
+    # Process character files
+    if os.path.exists(CHAR_DIR):
+        for fn in sorted(os.listdir(CHAR_DIR)):
+            if not fn.lower().endswith(".md"): continue
+            path = os.path.join(CHAR_DIR, fn)
+            title = os.path.splitext(fn)[0]
+            doc_uuid = upsert_document("character", title, path, None, None)
+            indexed_docs += 1
+            indexed_chunks += process_document_chunks(path, doc_uuid, None, None)
+
     # Process location files
     if os.path.exists(LOC_DIR):
         for fn in sorted(os.listdir(LOC_DIR)):
@@ -170,7 +180,10 @@ def scan_once() -> dict:
 
     return {"indexed_docs": indexed_docs, "indexed_chunks": indexed_chunks}
 
-def process_document_chunks(path: str, doc_uuid: str, session_no: Optional[int], session_date: Optional[str]) -> int:
+def process_document_chunks(path: str, 
+                            doc_uuid: str, 
+                            session_no: Optional[int], 
+                            session_date: Optional[str]) -> int:
     """Process a document file and create chunks with entity links"""
     chunk_count = 0
     
@@ -183,12 +196,12 @@ def process_document_chunks(path: str, doc_uuid: str, session_no: Optional[int],
     for heading, body in sections:
         # favor heading-bounded chunks, but window if long
         bodies = list(window_chunks(body, max_chars=2000, overlap=200))
+        char_uuids = []
+        location_uuids = []
+        organization_uuids = []
         for chunk_text in bodies:
             # resolve [[links]] to characters, locations, and organizations
             wikilinks = extract_wikilinks(chunk_text)
-            char_uuids = []
-            location_uuids = []
-            organization_uuids = []
             for wl in wikilinks:
                 name = wl.strip()
                 if name in _char_name_to_id:
@@ -197,6 +210,21 @@ def process_document_chunks(path: str, doc_uuid: str, session_no: Optional[int],
                     location_uuids.append(_location_name_to_id[name])
                 elif name in _organization_name_to_id:
                     organization_uuids.append(_organization_name_to_id[name])
+            # Auto-link document chunks to their corresponding entities
+            # (since documents never self-reference with [[links]])
+            doc_title = os.path.splitext(os.path.basename(path))[0]
+            if path.startswith(CHAR_DIR) and doc_title in _char_name_to_id:
+                entity_uuid = _char_name_to_id[doc_title]
+                if entity_uuid not in char_uuids:
+                    char_uuids.append(entity_uuid)
+            elif path.startswith(LOC_DIR) and doc_title in _location_name_to_id:
+                entity_uuid = _location_name_to_id[doc_title]
+                if entity_uuid not in location_uuids:
+                    location_uuids.append(entity_uuid)
+            elif path.startswith(ORG_DIR) and doc_title in _organization_name_to_id:
+                entity_uuid = _organization_name_to_id[doc_title]
+                if entity_uuid not in organization_uuids:
+                    organization_uuids.append(entity_uuid)
             upsert_chunk(chunk_text, heading, doc_uuid, session_no, session_date, char_uuids, location_uuids, organization_uuids)
             chunk_count += 1
     
