@@ -19,7 +19,22 @@ def file_sha(path: str) -> str:
 
 
 def extract_wikilinks(text: str) -> list[str]:
-    return [m.group(1).strip() for m in WIKILINK_RE.finditer(text)]
+    matches = WIKILINK_RE.finditer(text)
+    links = []
+    for m in matches:
+        link_content = m.group(1).strip()
+        # Handle pipe syntax: [[filename|display name]] -> extract just the filename
+        if '|' in link_content:
+            filename = link_content.split('|')[0].strip()
+        else:
+            filename = link_content
+        
+        # Extract just the base filename from paths like "specific/file/path/Session 1"
+        if '/' in filename:
+            filename = os.path.basename(filename)
+        
+        links.append(filename)
+    return links
 
 
 def split_into_sections(md_text: str) -> List[Tuple[str, str]]:

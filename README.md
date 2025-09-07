@@ -25,8 +25,7 @@ rpg-rag-llm/
 
 
 # Quick start
-1) Put your notes under:
-`./data/notes/sessions/.md ./data/notes/characters/.md`
+1) Copy .env.example to .env and set the paths to your notes and any other environment variables.
 
 2) Start services:
 `docker compose up -d --build`
@@ -57,7 +56,7 @@ rpg-rag-llm/
 
 
 ## Environment
-Set envs in `docker-compose.yml` or `.env`. For large repos, use SSD for Weaviate volume.
+Set envs in `compose.yml` or `.env`. For large repos, use SSD for Weaviate volume.
 ```
 WEAVIATE_URL=http://weaviate:8080 
 NOTES_SESSIONS_DIR=/notes/sessions 
