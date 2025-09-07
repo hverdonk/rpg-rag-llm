@@ -20,30 +20,45 @@ def upsert_character(name: str, path: str) -> str:
     key = name.strip()
     if key in _char_name_to_id:
         return _char_name_to_id[key]
-    obj = {"name": name, "aliases": [], "path": path}
-    uuid = client.data_object.create(obj, class_name="Character")
-    _char_name_to_id[key] = uuid
-    return uuid
+    
+    characters = client.collections.get("Character")
+    uuid = characters.data.insert({
+        "name": name,
+        "aliases": [],
+        "path": path
+    })
+    _char_name_to_id[key] = str(uuid)
+    return str(uuid)
 
 def upsert_location(name: str, path: str) -> str:
     client = get_client()
     key = name.strip()
     if key in _location_name_to_id:
         return _location_name_to_id[key]
-    obj = {"name": name, "aliases": [], "path": path}
-    uuid = client.data_object.create(obj, class_name="Location")
-    _location_name_to_id[key] = uuid
-    return uuid
+    
+    locations = client.collections.get("Location")
+    uuid = locations.data.insert({
+        "name": name,
+        "aliases": [],
+        "path": path
+    })
+    _location_name_to_id[key] = str(uuid)
+    return str(uuid)
 
 def upsert_organization(name: str, path: str) -> str:
     client = get_client()
     key = name.strip()
     if key in _organization_name_to_id:
         return _organization_name_to_id[key]
-    obj = {"name": name, "aliases": [], "path": path}
-    uuid = client.data_object.create(obj, class_name="Organization")
-    _organization_name_to_id[key] = uuid
-    return uuid
+    
+    organizations = client.collections.get("Organization")
+    uuid = organizations.data.insert({
+        "name": name,
+        "aliases": [],
+        "path": path
+    })
+    _organization_name_to_id[key] = str(uuid)
+    return str(uuid)
 
 def sync_characters():
     # Create Character objects from files in character dir
@@ -93,15 +108,15 @@ def upsert_document(doc_type: str,
                     session_no: Optional[int],
                     session_date: Optional[str]) -> str:
     client = get_client()
-    obj = {
+    documents = client.collections.get("Document")
+    uuid = documents.data.insert({
         "type": doc_type,
         "title": title,
         "path": path,
         "sessionNo": session_no,
         "sessionDate": session_date,
-    }
-    uuid = client.data_object.create(obj, class_name="Document")
-    return uuid
+    })
+    return str(uuid)
 
 
 def upsert_chunk(text: str,
@@ -114,19 +129,25 @@ def upsert_chunk(text: str,
                  organization_uuids: list[str] = []):
     client = get_client()
     vec = embed_texts([text])[0]
-    obj = {
-        "text": text,
-        "heading": heading or "",
-        "startChar": 0,
-        "endChar": len(text),
-        "sessionNo": session_no,
-        "sessionDate": session_date,
-        "ofDoc": [{"beacon": f"weaviate://localhost/Document/{of_doc_uuid}"}],
-        "characters": [{"beacon": f"weaviate://localhost/Character/{c}"} for c in char_uuids],
-        "locations": [{"beacon": f"weaviate://localhost/Location/{c}"} for c in location_uuids],
-        "organizations": [{"beacon": f"weaviate://localhost/Organization/{c}"} for c in organization_uuids],
-    }
-    client.data_object.create(obj, class_name="Chunk", vector=vec)
+    
+    chunks = client.collections.get("Chunk")
+    chunks.data.insert(
+        properties={
+            "text": text,
+            "heading": heading or "",
+            "startChar": 0,
+            "endChar": len(text),
+            "sessionNo": session_no,
+            "sessionDate": session_date,
+        },
+        references={
+            "ofDoc": of_doc_uuid,
+            "characters": char_uuids,
+            "locations": location_uuids,
+            "organizations": organization_uuids,
+        },
+        vector=vec
+    )
 
 
 def scan_once() -> dict:

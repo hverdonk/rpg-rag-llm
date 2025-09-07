@@ -1,5 +1,6 @@
 from app.config import settings
 import weaviate
+from weaviate.classes.config import Configure, Property, DataType, ReferenceProperty
 
 
 _client = None
@@ -14,72 +15,79 @@ def get_client() -> weaviate.WeaviateClient:
         )
     return _client
 
-# 'path' is file path, in this case
-SCHEMA = {
-    "classes": [
-        {
-            "class": "Character",
-            "vectorizer": "none",
-            "properties": [
-                {"name": "name", "dataType": ["text"]},
-                {"name": "aliases", "dataType": ["text[]"]},
-                {"name": "path", "dataType": ["text"]}
-            ]
-        },
-        {
-            "class": "Location",
-            "vectorizer": "none",
-            "properties": [
-                {"name": "name", "dataType": ["text"]},
-                {"name": "aliases", "dataType": ["text[]"]},
-                {"name": "path", "dataType": ["text"]}
-            ]
-        },
-        {
-            "class": "Organization",
-            "vectorizer": "none",
-            "properties": [
-                {"name": "name", "dataType": ["text"]},
-                {"name": "aliases", "dataType": ["text[]"]},
-                {"name": "path", "dataType": ["text"]}
-            ]
-        },
-        {
-            "class": "Document",
-            "vectorizer": "none",
-            "properties": [
-                {"name": "type", "dataType": ["text"]},
-                {"name": "title", "dataType": ["text"]},
-                {"name": "sessionNo", "dataType": ["int"]},
-                {"name": "sessionDate", "dataType": ["date"]},
-                {"name": "path", "dataType": ["text"]},
-                {"name": "links", "dataType": ["Document"]}
-            ]
-        },
-        {
-            "class": "Chunk",
-            "vectorizer": "none",
-            "properties": [
-                {"name": "text", "dataType": ["text"]},
-                {"name": "heading", "dataType": ["text"]},
-                {"name": "startChar", "dataType": ["int"]},
-                {"name": "endChar", "dataType": ["int"]},
-                {"name": "sessionNo", "dataType": ["int"]},
-                {"name": "sessionDate", "dataType": ["date"]},
-                {"name": "ofDoc", "dataType": ["Document"]},
-                {"name": "characters", "dataType": ["Character"]},
-                {"name": "locations", "dataType": ["Location"]},
-                {"name": "organizations", "dataType": ["Organization"]}
-            ]
-        }
-    ]
-}
 
 
 def ensure_schema():
     client = get_client()
-    with client.batch.configure(batch_size=200):
-        existing = {c["class"] for c in client.schema.get()["classes"]}
-        for cls in SCHEMA["classes"]:
-            if cls["class"] not in existing:
-                client.schema.create_class(cls)
+    existing_collections = set(client.collections.list_all().keys())
+    
+    # Create Character collection
+    if "Character" not in existing_collections:
+        client.collections.create(
+            name="Character",
+            properties=[
+                Property(name="name", data_type=DataType.TEXT),
+                Property(name="aliases", data_type=DataType.TEXT_ARRAY),
+                Property(name="path", data_type=DataType.TEXT)
+            ],
+            vectorizer_config=Configure.Vectorizer.none()
+        )
+    
+    # Create Location collection
+    if "Location" not in existing_collections:
+        client.collections.create(
+            name="Location",
+            properties=[
+                Property(name="name", data_type=DataType.TEXT),
+                Property(name="aliases", data_type=DataType.TEXT_ARRAY),
+                Property(name="path", data_type=DataType.TEXT)
+            ],
+            vectorizer_config=Configure.Vectorizer.none()
+        )
+    
+    # Create Organization collection
+    if "Organization" not in existing_collections:
+        client.collections.create(
+            name="Organization",
+            properties=[
+                Property(name="name", data_type=DataType.TEXT),
+                Property(name="aliases", data_type=DataType.TEXT_ARRAY),
+                Property(name="path", data_type=DataType.TEXT)
+            ],
+            vectorizer_config=Configure.Vectorizer.none()
+        )
+    
+    # Create Document collection
+    if "Document" not in existing_collections:
+        client.collections.create(
+            name="Document",
+            properties=[
+                Property(name="type", data_type=DataType.TEXT),
+                Property(name="title", data_type=DataType.TEXT),
+                Property(name="sessionNo", data_type=DataType.INT),
+                Property(name="sessionDate", data_type=DataType.DATE),
+                Property(name="path", data_type=DataType.TEXT)
+            ],
+            vectorizer_config=Configure.Vectorizer.none()
+        )
+    
+    # Create Chunk collection with references
+    if "Chunk" not in existing_collections:
+        client.collections.create(
+            name="Chunk",
+            properties=[
+                Property(name="text", data_type=DataType.TEXT),
+                Property(name="heading", data_type=DataType.TEXT),
+                Property(name="startChar", data_type=DataType.INT),
+                Property(name="endChar", data_type=DataType.INT),
+                Property(name="sessionNo", data_type=DataType.INT),
+                Property(name="sessionDate", data_type=DataType.DATE)
+            ],
+            references=[
+                ReferenceProperty(name="ofDoc", target_collection="Document"),
+                ReferenceProperty(name="characters", target_collection="Character"),
+                ReferenceProperty(name="locations", target_collection="Location"),
+                ReferenceProperty(name="organizations", target_collection="Organization")
+            ],
+            vectorizer_config=Configure.Vectorizer.none()
+        )

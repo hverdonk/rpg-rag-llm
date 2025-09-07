@@ -2,24 +2,53 @@ from typing import List, Dict, Any
 from app.weaviate_client import get_client
 from app.embeddings import embed_texts, get_reranker
 from app.config import settings
+from weaviate.classes.query import Filter
 
 
-def hybrid_search(query: str, k: int = 30, filters: dict | None = None) -> List[Dict[str, Any]]:
+def hybrid_search(query: str, k: int = 30, filters: Filter | None = None) -> List[Dict[str, Any]]:
     client = get_client()
-    # We use GraphQL via the Python client
-    q = client.query.get("Chunk", [
-        "text", "heading", "sessionNo", "sessionDate",
-        "ofDoc { ... on Document { title path sessionNo sessionDate } }",
-        "characters { ... on Character { name path } }",
-        "_additional { id score distance }",
-    ]).with_limit(k).with_hybrid(query=query, alpha=0.5)
-
-    if filters:
-        q = q.with_where(filters)
-
-    res = q.do()
-    items = res.get("data", {}).get("Get", {}).get("Chunk", [])
-    return items
+    chunks = client.collections.get("Chunk")
+    
+    response = chunks.query.hybrid(
+        query=query,
+        limit=k,
+        alpha=0.5,
+        return_metadata=["score", "distance"],
+        return_references=["ofDoc", "characters", "locations", "organizations"],
+        where=filters
+    )
+    
+    results = []
+    for obj in response.objects:
+        # Safe reference handling
+        doc_ref = obj.references.get("ofDoc") if obj.references else None
+        
+        result = {
+            "text": obj.properties["text"],
+            "heading": obj.properties["heading"],
+            "sessionNo": obj.properties["sessionNo"],
+            "sessionDate": obj.properties["sessionDate"],
+            "doc_title": doc_ref.properties["title"] if doc_ref else None,
+            "path": doc_ref.properties["path"] if doc_ref else None,
+            "chunk_id": str(obj.uuid),
+            "score": obj.metadata.score if obj.metadata else None,
+            "distance": obj.metadata.distance if obj.metadata else None,
+            "characters": [{
+                "name": char.properties["name"],
+                "path": char.properties["path"]
+            } for char in (obj.references.get("characters", []) if obj.references else [])],
+            "locations": [{
+                "name": loc.properties["name"],
+                "path": loc.properties["path"]
+            } for loc in (obj.references.get("locations", []) if obj.references else [])],
+            "organizations": [{
+                "name": org.properties["name"],
+                "path": org.properties["path"]
+            } for org in (obj.references.get("organizations", []) if obj.references else [])]
+        }
+        results.append(result)
+    
+    return results
 
 
 def maybe_rerank(query: str, items: List[Dict[str, Any]], top_n: int) -> List[Dict[str, Any]]:
@@ -36,20 +65,19 @@ def assemble_context(items: List[Dict[str, Any]], max_chunks: int) -> List[Dict[
     # Coalesce by document+heading to encourage diversity
     seen = set()
     out = []
-    for it in items:
-        doc = it.get("ofDoc", {})
-        key = (doc.get("title"), it.get("heading"))
+    for item in items:
+        key = (item["doc_title"], item["heading"])
         if key in seen:
             continue
         seen.add(key)
         out.append({
-            "text": it.get("text"),
-            "heading": it.get("heading"),
-            "doc_title": doc.get("title"),
-            "path": doc.get("path"),
-            "sessionNo": doc.get("sessionNo"),
-            "sessionDate": doc.get("sessionDate"),
-            "chunk_id": it.get("_additional", {}).get("id"),
+            "text": item["text"],
+            "heading": item["heading"],
+            "doc_title": item["doc_title"],
+            "path": item["path"],
+            "sessionNo": item["sessionNo"],
+            "sessionDate": item["sessionDate"],
+            "chunk_id": item["chunk_id"],
         })
         if len(out) >= max_chunks:
             break

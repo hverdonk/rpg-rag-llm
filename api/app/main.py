@@ -4,6 +4,7 @@ from app.ingest import scan_once
 from app.retrieval import hybrid_search, maybe_rerank, assemble_context
 from app.config import settings
 from app.generator import generate_answer
+from weaviate.classes.query import Filter
 
 app = FastAPI(title="Weaviate RPG RAG API")
 
@@ -22,16 +23,15 @@ def ingest_scan():
 def ask(req: AskRequest):
     filters = None
     if req.from_session or req.to_session:
-        f = {"path": ["sessionNo"], "operator": "GreaterThan", "valueInt": 0}
         if req.from_session and req.to_session:
-            filters = {"operator": "And", "operands": [
-                {"path": ["sessionNo"], "operator": "GreaterThanEqual", "valueInt": req.from_session},
-                {"path": ["sessionNo"], "operator": "LessThanEqual", "valueInt": req.to_session},
-            ]}
+            filters = Filter.all_of([
+                Filter.by_property("sessionNo").greater_or_equal(req.from_session),
+                Filter.by_property("sessionNo").less_or_equal(req.to_session)
+            ])
         elif req.from_session:
-            filters = {"path": ["sessionNo"], "operator": "GreaterThanEqual", "valueInt": req.from_session}
+            filters = Filter.by_property("sessionNo").greater_or_equal(req.from_session)
         elif req.to_session:
-            filters = {"path": ["sessionNo"], "operator": "LessThanEqual", "valueInt": req.to_session}
+            filters = Filter.by_property("sessionNo").less_or_equal(req.to_session)
 
     candidates = hybrid_search(req.query, k=req.k, filters=filters)
     top_items = maybe_rerank(req.query, candidates, settings.max_context_chunks)
