@@ -12,6 +12,12 @@ services:
     volumes:
       - weaviate_data:/var/lib/weaviate
 
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports: ["11434:11434"]     # only expose if you want LAN access
+    volumes:
+      - ollama_data:/root/.ollama
 
   api:
     build: ./api
@@ -36,3 +42,4 @@ services:
 volumes:
   weaviate_data:
   api_cache:
+  ollama_data:
