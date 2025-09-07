@@ -27,6 +27,24 @@ SCHEMA = {
             ]
         },
         {
+            "class": "Location",
+            "vectorizer": "none",
+            "properties": [
+                {"name": "name", "dataType": ["text"]},
+                {"name": "aliases", "dataType": ["text[]"]},
+                {"name": "path", "dataType": ["text"]}
+            ]
+        },
+        {
+            "class": "Organization",
+            "vectorizer": "none",
+            "properties": [
+                {"name": "name", "dataType": ["text"]},
+                {"name": "aliases", "dataType": ["text[]"]},
+                {"name": "path", "dataType": ["text"]}
+            ]
+        },
+        {
             "class": "Document",
             "vectorizer": "none",
             "properties": [
@@ -49,7 +67,9 @@ SCHEMA = {
                 {"name": "sessionNo", "dataType": ["int"]},
                 {"name": "sessionDate", "dataType": ["date"]},
                 {"name": "ofDoc", "dataType": ["Document"]},
-                {"name": "characters", "dataType": ["Character"]}
+                {"name": "characters", "dataType": ["Character"]},
+                {"name": "locations", "dataType": ["Location"]},
+                {"name": "organizations", "dataType": ["Organization"]}
             ]
         }
     ]

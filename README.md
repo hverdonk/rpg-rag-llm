@@ -46,6 +46,9 @@ rpg-rag-llm/
 ## Notes format
 - Session notes and character notes are Markdown.
 - `[[Varin]]` in text links to `characters/Varin.md`.
+- `[[Ice Village]]` in text links to `locations/Ice Village.md`.
+- `[[Army of the West]]` in text links to `organizations/Army of the West.md`.
+- Supports pipe syntax: `[[filename|display name]]` and paths: `[[path/to/file|display]]`.
 - The ingester extracts headings, chunks by section, embeds on CPU, upserts to Weaviate.
 
 
@@ -61,6 +64,8 @@ Set envs in `compose.yml` or `.env`. For large repos, use SSD for Weaviate volum
 WEAVIATE_URL=http://weaviate:8080 
 NOTES_SESSIONS_DIR=/notes/sessions 
 NOTES_CHARACTERS_DIR=/notes/characters
+NOTES_LOCATIONS_DIR=/notes/locations
+NOTES_ORGANIZATIONS_DIR=/notes/organizations
 
 # Generator Configuration
 GENERATOR_PROVIDER=ollama  # or "gemini"
