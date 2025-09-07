@@ -37,33 +37,6 @@ def ask(req: AskRequest):
     top_items = maybe_rerank(req.query, candidates, settings.max_context_chunks)
     context = assemble_context(top_items, settings.max_context_chunks)
 
-    # Here you would call your generator (LLM). For now we just return the context and stub an answer.
-    # Replace the below with a call to your local/hosted LLM.
-    # answer_lines = [
-    #     "Here is what I found:",
-    # ]
-    # for c in context:
-    #     sec = c["heading"] or "(no heading)"
-    #     ses = f"Session {c['sessionNo']}" if c.get("sessionNo") else ""
-    #     answer_lines.append(f"- {ses} {c['doc_title']} § {sec}: …")
-
-    # sources = [
-    #     Source(
-    #         doc_title=c["doc_title"],
-    #         session_no=c.get("sessionNo"),
-    #         heading=c.get("heading"),
-    #         path=c.get("path"),
-    #         chunk_id=c.get("chunk_id"),
-    #     ) for c in context
-    # ]
-
-    # return AskResponse(
-    #     answer="\n".join(answer_lines),
-    #     sources=sources,
-    #     context=context,
-    # )
-
-    # real answer via Ollama
     answer = generate_answer(req.query, context, max_tokens=400)
 
     sources = [Source(
