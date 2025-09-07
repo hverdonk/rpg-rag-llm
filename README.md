@@ -53,7 +53,7 @@ rpg-rag-llm/
 ## Models (local CPU by default)
 - Embeddings: `BAAI/bge-small-en-v1.5` (384‑d). Change via `EMBED_MODEL_NAME`.
 - Reranker (optional): `BAAI/bge-reranker-base`. Enable with `ENABLE_RERANKER=true`.
-- Generator: out of scope here; wire your Discord bot to call `/ask` and then hit a local/hosted LLM with the returned `context`.
+- Generator: Choose between local Ollama or Google Gemini via `GENERATOR_PROVIDER`.
 
 
 ## Environment
@@ -62,7 +62,32 @@ Set envs in `docker-compose.yml` or `.env`. For large repos, use SSD for Weaviat
 WEAVIATE_URL=http://weaviate:8080 
 NOTES_SESSIONS_DIR=/notes/sessions 
 NOTES_CHARACTERS_DIR=/notes/characters
+
+# Generator Configuration
+GENERATOR_PROVIDER=ollama  # or "gemini"
+
+# Ollama settings (when using ollama)
+OLLAMA_BASE_URL=http://ollama:11434
+OLLAMA_MODEL_NAME=llama3.1:8b-instruct-q4_K_M
+
+# Gemini settings (when using gemini)
+GEMINI_API_KEY=your_api_key_here
+GEMINI_MODEL_NAME=gemini-1.5-flash
 ```
+
+## Generator Providers
+
+### Using Ollama (Default)
+The system uses Ollama by default for local LLM generation. Ensure the Ollama service is running and the specified model is available.
+
+### Using Google Gemini
+To use Google Gemini instead of Ollama:
+1. Get an API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Set `GENERATOR_PROVIDER=gemini` in your environment
+3. Set `GEMINI_API_KEY=your_actual_api_key`
+4. Optionally configure `GEMINI_MODEL_NAME` (defaults to `gemini-1.5-flash`)
+
+When using Gemini, the Ollama service is not required and can be removed from the docker-compose.yml if desired.
 
 ## Roadmap
 - File watcher (watchdog) container/sidecar
