@@ -1,6 +1,7 @@
 services:
   weaviate:
     image: semitechnologies/weaviate:latest
+    container_name: weaviate
     restart: unless-stopped
     ports: ["8080:8080"]
     environment:
@@ -14,20 +15,48 @@ services:
 
   ollama:
     image: ollama/ollama:latest
+    container_name: ollama
     restart: unless-stopped
     ports: ["11434:11434"]     # only expose if you want LAN access
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_MODEL=${OLLAMA_MODEL_NAME:-llama3.1:8b-instruct-q4_K_M}
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh","-lc"]
+    command: >
+      set -euo pipefail;
+      echo 'Pulling model: ${OLLAMA_MODEL_NAME:-llama3.1:8b-instruct-q4_K_M}';
+      ollama pull ${OLLAMA_MODEL_NAME:-llama3.1:8b-instruct-q4_K_M};
+      echo 'Model pulled successfully';
+    restart: "no"
 
   api:
+    container_name: rag-llm-api
     build: ./api
     restart: unless-stopped
     environment:
       WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
-      NOTES_SESSIONS_DIR: ${NOTES_SESSIONS_DIR:-/notes/sessions}
-      NOTES_CHARACTERS_DIR: ${NOTES_CHARACTERS_DIR:-/notes/characters}
-      NOTES_LOCATIONS_DIR: ${NOTES_LOCATIONS_DIR:-/notes/locations}
-      NOTES_ORGANIZATIONS_DIR: ${NOTES_ORGANIZATIONS_DIR:-/notes/organizations}
+      NOTES_SESSIONS_DIR: /notes/sessions
+      NOTES_CHARACTERS_DIR: /notes/characters
+      NOTES_LOCATIONS_DIR: /notes/locations
+      NOTES_ORGANIZATIONS_DIR: /notes/organizations
       EMBED_MODEL_NAME: ${EMBED_MODEL_NAME:-BAAI/bge-small-en-v1.5}
       RERANKER_MODEL_NAME: ${RERANKER_MODEL_NAME:-BAAI/bge-reranker-base}
       ENABLE_RERANKER: ${ENABLE_RERANKER:-false}
@@ -41,10 +70,10 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL_NAME: ${GEMINI_MODEL_NAME:-gemini-1.5-flash}
     volumes:
-      - ./data/notes/sessions:/notes/sessions:ro
-      - ./data/notes/characters:/notes/characters:ro
-      - ./data/notes/locations:/notes/locations:ro
-      - ./data/notes/organizations:/notes/organizations:ro
+      - ${NOTES_SESSIONS_DIR}:/notes/sessions:ro
+      - ${NOTES_CHARACTERS_DIR}:/notes/characters:ro
+      - ${NOTES_LOCATIONS_DIR}:/notes/locations:ro
+      - ${NOTES_ORGANIZATIONS_DIR}:/notes/organizations:ro
       - api_cache:/root/.cache # speeds up model loads
     depends_on:
       - weaviate

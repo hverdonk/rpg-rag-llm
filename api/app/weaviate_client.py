@@ -1,6 +1,6 @@
 from app.config import settings
 import weaviate
-from weaviate.classes.config import Configure, Property, DataType, ReferenceProperty
+from weaviate.classes.config import Configure, Property, DataType, ReferenceProperty, VectorDistances
 
 
 _client = None
@@ -29,8 +29,7 @@ def ensure_schema():
                 Property(name="name", data_type=DataType.TEXT),
                 Property(name="aliases", data_type=DataType.TEXT_ARRAY),
                 Property(name="path", data_type=DataType.TEXT)
-            ],
-            vectorizer_config=Configure.Vectorizer.none()
+            ]
         )
     
     # Create Location collection
@@ -41,8 +40,7 @@ def ensure_schema():
                 Property(name="name", data_type=DataType.TEXT),
                 Property(name="aliases", data_type=DataType.TEXT_ARRAY),
                 Property(name="path", data_type=DataType.TEXT)
-            ],
-            vectorizer_config=Configure.Vectorizer.none()
+            ]
         )
     
     # Create Organization collection
@@ -53,8 +51,7 @@ def ensure_schema():
                 Property(name="name", data_type=DataType.TEXT),
                 Property(name="aliases", data_type=DataType.TEXT_ARRAY),
                 Property(name="path", data_type=DataType.TEXT)
-            ],
-            vectorizer_config=Configure.Vectorizer.none()
+            ]
         )
     
     # Create Document collection
@@ -67,11 +64,10 @@ def ensure_schema():
                 Property(name="sessionNo", data_type=DataType.INT),
                 Property(name="sessionDate", data_type=DataType.DATE),
                 Property(name="path", data_type=DataType.TEXT)
-            ],
-            vectorizer_config=Configure.Vectorizer.none()
+            ]
         )
     
-    # Create Chunk collection with references
+    # Create Chunk collection with references and vector config
     if "Chunk" not in existing_collections:
         client.collections.create(
             name="Chunk",
@@ -89,5 +85,9 @@ def ensure_schema():
                 ReferenceProperty(name="locations", target_collection="Location"),
                 ReferenceProperty(name="organizations", target_collection="Organization")
             ],
-            vectorizer_config=Configure.Vectorizer.none()
+            vector_config=Configure.Vectors.self_provided(
+                vector_index_config=Configure.VectorIndex.hnsw(
+                    distance_metric=VectorDistances.COSINE
+                )
+            )
         )

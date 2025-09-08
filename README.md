@@ -35,8 +35,8 @@ rpg-rag-llm/
 
 4) Ask a question:
     ```
-    curl -s -X POST http://localhost:8000/ask
-    -H 'Content-Type: application/json'
+    curl -s -X POST http://localhost:8000/ask \
+    -H 'Content-Type: application/json' \
     -d '{"query":"What did Varin do in the Ice Village?","k":30}' | jq
     ```
 
