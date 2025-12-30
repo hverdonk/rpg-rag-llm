@@ -77,7 +77,8 @@ def ensure_schema():
                 Property(name="startChar", data_type=DataType.INT),
                 Property(name="endChar", data_type=DataType.INT),
                 Property(name="sessionNo", data_type=DataType.INT),
-                Property(name="sessionDate", data_type=DataType.DATE)
+                Property(name="sessionDate", data_type=DataType.DATE),
+                Property(name="doc_title", data_type=DataType.TEXT)
             ],
             references=[
                 ReferenceProperty(name="ofDoc", target_collection="Document"),

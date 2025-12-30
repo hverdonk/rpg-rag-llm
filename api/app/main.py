@@ -40,11 +40,11 @@ def ask(req: AskRequest):
     answer = generate_answer(req.query, context, max_tokens=400)
 
     sources = [Source(
-        doc_title=c["doc_title"], 
+        doc_title=c.get("doc_title") or "Unknown Document", 
         session_no=c.get("sessionNo"),
         heading=c.get("heading"), 
         path=c.get("path"), 
-        chunk_id=c.get("chunk_id")
+        chunk_id=c.get("chunk_id") or ""
     ) for c in context]
 
     return AskResponse(answer=answer, sources=sources, context=context)

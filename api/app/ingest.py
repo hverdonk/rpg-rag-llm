@@ -122,6 +122,7 @@ def upsert_document(doc_type: str,
 def upsert_chunk(text: str,
                  heading: Optional[str],
                  of_doc_uuid: str,
+                 doc_title: str,
                  session_no: Optional[int],
                  session_date: Optional[str],
                  char_uuids: list[str],
@@ -139,6 +140,7 @@ def upsert_chunk(text: str,
             "endChar": len(text),
             "sessionNo": session_no,
             "sessionDate": session_date,
+            "doc_title": doc_title,
         },
         references={
             "ofDoc": of_doc_uuid,
@@ -167,42 +169,43 @@ def scan_once() -> dict:
         session_no, session_date = parse_session_filename(fn)
         doc_uuid = upsert_document("session", title, path, session_no, session_date)
         indexed_docs += 1
-        indexed_chunks += process_document_chunks(path, doc_uuid, session_no, session_date)
+        indexed_chunks += process_document_chunks(path, doc_uuid, title, session_no, session_date)
 
     # Process character files
     if os.path.exists(CHAR_DIR):
         for fn in sorted(os.listdir(CHAR_DIR)):
             if not fn.lower().endswith(".md"): continue
             path = os.path.join(CHAR_DIR, fn)
-            title = os.path.splitext(fn)[0]
+            title = f"{os.path.splitext(fn)[0]} Character"
             doc_uuid = upsert_document("character", title, path, None, None)
             indexed_docs += 1
-            indexed_chunks += process_document_chunks(path, doc_uuid, None, None)
+            indexed_chunks += process_document_chunks(path, doc_uuid, title, None, None)
 
     # Process location files
     if os.path.exists(LOC_DIR):
         for fn in sorted(os.listdir(LOC_DIR)):
             if not fn.lower().endswith(".md"): continue
             path = os.path.join(LOC_DIR, fn)
-            title = os.path.splitext(fn)[0]
+            title = f"{os.path.splitext(fn)[0]} Location"
             doc_uuid = upsert_document("location", title, path, None, None)
             indexed_docs += 1
-            indexed_chunks += process_document_chunks(path, doc_uuid, None, None)
+            indexed_chunks += process_document_chunks(path, doc_uuid, title, None, None)
 
     # Process organization files
     if os.path.exists(ORG_DIR):
         for fn in sorted(os.listdir(ORG_DIR)):
             if not fn.lower().endswith(".md"): continue
             path = os.path.join(ORG_DIR, fn)
-            title = os.path.splitext(fn)[0]
+            title = f"{os.path.splitext(fn)[0]} Organization"
             doc_uuid = upsert_document("organization", title, path, None, None)
             indexed_docs += 1
-            indexed_chunks += process_document_chunks(path, doc_uuid, None, None)
+            indexed_chunks += process_document_chunks(path, doc_uuid, title, None, None)
 
     return {"indexed_docs": indexed_docs, "indexed_chunks": indexed_chunks}
 
 def process_document_chunks(path: str, 
                             doc_uuid: str, 
+                            doc_title: str,
                             session_no: Optional[int], 
                             session_date: Optional[str]) -> int:
     """Process a document file and create chunks with entity links"""
@@ -246,7 +249,7 @@ def process_document_chunks(path: str,
                 entity_uuid = _organization_name_to_id[doc_title]
                 if entity_uuid not in organization_uuids:
                     organization_uuids.append(entity_uuid)
-            upsert_chunk(chunk_text, heading, doc_uuid, session_no, session_date, char_uuids, location_uuids, organization_uuids)
+            upsert_chunk(chunk_text, heading, doc_uuid, doc_title, session_no, session_date, char_uuids, location_uuids, organization_uuids)
             chunk_count += 1
     
     return chunk_count

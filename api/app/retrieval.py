@@ -46,7 +46,7 @@ def hybrid_search(query: str, k: int = 30, filters: Filter | None = None) -> Lis
             "heading": obj.properties["heading"],
             "sessionNo": obj.properties["sessionNo"],
             "sessionDate": obj.properties["sessionDate"],
-            "doc_title": None,
+            "doc_title": obj.properties.get("doc_title"),
             "path": None,
             "chunk_id": str(obj.uuid),
             "score": obj.metadata.score if obj.metadata else None,
