@@ -6,8 +6,7 @@ This repo indexes Markdown notes for a long‑running RPG (sessions + characters
 ## File tree
 ```
 rpg-rag-llm/
-├─ compose.yml
-├─ .env.example
+├─ compose.yaml
 ├─ README.md
 ├─ api/
 │ ├─ Dockerfile
@@ -25,7 +24,7 @@ rpg-rag-llm/
 
 
 # Quick start
-1) Copy .env.example to .env and set the paths to your notes and any other environment variables.
+1) Create a `.env` file and set the note-directory paths and any other environment variables.
 
 2) Start services:
 `docker compose up -d --build`
@@ -59,7 +58,7 @@ rpg-rag-llm/
 
 
 ## Environment
-Set envs in `compose.yml` or `.env`. For large repos, use SSD for Weaviate volume.
+Set envs in `compose.yaml` or `.env`. For large repos, use SSD for the Weaviate volume.
 ```
 WEAVIATE_URL=http://weaviate:8080 
 NOTES_SESSIONS_DIR=/notes/sessions 
@@ -91,7 +90,7 @@ To use Google Gemini instead of Ollama:
 3. Set `GEMINI_API_KEY=your_actual_api_key`
 4. Optionally configure `GEMINI_MODEL_NAME` (defaults to `gemini-1.5-flash`)
 
-When using Gemini, the Ollama service is not required and can be removed from the docker-compose.yml if desired.
+When using Gemini, the Ollama service is not required and can be removed from the compose.yaml if desired.
 
 ## Roadmap
 - File watcher (watchdog) container/sidecar

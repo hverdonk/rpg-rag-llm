@@ -1,8 +1,8 @@
-import os, json, datetime
+import os
 from typing import Optional
 from app.config import settings
 from app.weaviate_client import get_client, ensure_schema
-from app.utils import extract_wikilinks, split_into_sections, window_chunks, slugify
+from app.utils import extract_wikilinks, split_into_sections, window_chunks
 from app.embeddings import embed_texts
 
 CHAR_DIR = settings.characters_dir
@@ -126,8 +126,8 @@ def upsert_chunk(text: str,
                  session_no: Optional[int],
                  session_date: Optional[str],
                  char_uuids: list[str],
-                 location_uuids: list[str] = [],
-                 organization_uuids: list[str] = []):
+                 location_uuids: Optional[list[str]] = None,
+                 organization_uuids: Optional[list[str]] = None):
     client = get_client()
     vec = embed_texts([text])[0]
     
@@ -145,8 +145,8 @@ def upsert_chunk(text: str,
         references={
             "ofDoc": of_doc_uuid,
             "characters": char_uuids,
-            "locations": location_uuids,
-            "organizations": organization_uuids,
+            "locations": location_uuids or [],
+            "organizations": organization_uuids or [],
         },
         vector=vec
     )
